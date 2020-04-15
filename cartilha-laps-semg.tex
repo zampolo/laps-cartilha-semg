@@ -65,7 +65,7 @@ A Figura~\ref{fig:fft_emg} apresenta um exemplo de sinal muscular, obtido pelo m
 
 \begin{figure}[h]
   \centering
-  \includegraphics[scale=0.25]{fig/fft_emg.eps}
+  \includegraphics[width=0.6\textwidth]{fig/fft_emg.eps}
 	\caption {Sinal do músculo tibial anterior nos domínios do tempo (em preto) e da frequência (em vermelho). Fonte:~\parencite{DELUCA2002}}
   \label{fig:fft_emg}
 \end{figure}
@@ -78,12 +78,134 @@ Uma das principais preocupações durante a aquisição do sinal mioelétrico é
   \item \textbf{Ruído da rede elétrica:} é o ruído de maior predominância no sinal de interesse, causado pela rede elétrica que tem como frequência fundamental $60$~Hz. Esse tipo de ruído pode ser atenuado com o uso de filtros \textit{notch} que são filtros com uma seletividade de banda de frequência muito restrita. 
   \item \textbf{Ruído de artefato de movimento:} trata-se do ruído gerado pelo movimento dos cabos que ligam os eletrodos ao circuito de aquisição e o próprio movimento entre eletrodo e a pele. Esse tipo de ruído pode ser combatido com a utilização de filtros passa-altas.
 \end{itemize}
- 
+% ======
+
+% ======
 \section{Sistema de aquisição desenvolvido}
 \label{sec:sist}
-  
-\section{Conclusão}
-\label{sec:concl}
+A etapa de pré-processamento do sistema de aquisição desenvolvido acompanha o diagrama em blocos apresentado na Figura~\ref{fig:blocogenerico}.
+
+\begin{figure}[h] 
+  \centering
+  \includegraphics[width=0.6\textwidth]{fig/diagrama_de_blocos_generico}
+	\caption{Diagrama em blocos da etapa de pré-processamento. Fonte:~\parencite{limajr2019}.}
+  \label{fig:blocogenerico}
+\end{figure}
+
+A seguir, cada um dos blocos constituintes da Figura~\ref{fig:blocogenerico} sera visto em maior detalhe.
+	
+\subsection{Amplificador de instrumentação}
+\label{ssec:ampl}
+Como primeira etapa do sistema de pré-processamento, temos o amplificador de instrumentação, cuja finalidade elevar a amplitude dos sinais musculares, originalmente na faixa de milivolts, para Volts, atuando também na eliminação de ruídos de modo comum~\parencite{DELUCA2002}. A Figura~\ref{fig:op_amp} mostra um modelo de um amplificador diferencial ideal.
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=0.6\textwidth]{fig/op_amp}
+  \caption{Modelo de um amplificador diferencial ideal. Fonte:~\parencite{ELETRONICS2019}}
+  \label{fig:op_amp}
+\end{figure}
+
+\subsection{Filtro passa-altas}
+\label{ssec:hp}
+No sistema desenvolvido optou-se pela topologia \textit{Sallen-Key} por se tratar de uma topologia de baixa complexidade na sua construção e no cálculo de seus componentes. A função de aproximação utilizada é a do filtro \textit{Butterworth}, por ser um dos mais simples e possuir resposta em frequência plana na banda passante~\parencite{BUTTERWORTH}.
+
+A frequência de corte está sintonizada em $10$~Hz com o objetivo de eliminar artefatos de movimento (movimento dos cabos e dos eletrodos de captação do sinal) do sinal mioelétrico.
+
+Foi utilizado um filtro de 1ª ordem, onde um circuito RC é ligado a um amplificador operacional (Figura~\ref{fig:hpf}). 
+
+O cálculo da frequência de corte ($f_c$) é dado por:
+     \begin{equation}
+     	f_c=\frac{1}{2\pi RC}
+     	\label{eq:fc}
+     \end{equation}
+onde $R$ e $C$ correspondem aos valores de resistência e capacitância no circuito RC em Ohms e Farads, respectivamente.
+
+Fixando os valores de $R= 1,591~M\Omega$ e $C = 10~nF$, tem-se $f_c = 10~Hz$. 
+
+\begin{figure}[h]
+		\centering
+		\includegraphics[width=0.6\textwidth]{fig/hpf}
+		\caption{Topologia do filtro passa-altas. Fonte:~\parencite{ELETRONICS2019}}
+		\label{fig:hpf}
+	\end{figure}
+     
+\subsection{Filtro passa-baixas}      
+\label{ssec:lp}
+Seguindo a mesma linha de raciocínio do estágio anterior, foi utilizado filtro Butterworth de 2ª ordem e topologia \textit{Sallen-Key}.
+
+A implementação do passa-baixas de 2ª ordem permite maior decaimento do ganho a partir da frequência de corte, $40~dB$ por década, aumentado a seletividade do sistema de pré-processamento em relação à eliminação de altas-frequências. A Figura \ref{fig:lpf} mostra a topologia do filtro passa-baixas utilizado.
+
+	\begin{figure}[h]
+		\centering
+		\includegraphics[width=0.6\textwidth]{fig/lpf}
+		\caption{Topologia do filtro passa-baixas. Fonte: Wikipédia.}
+		\label{fig:lpf}
+	\end{figure}
+
+Seguindo a literatura especializada~\parencite{DELUCA2002}, a frequência de corte foi ajustada para $500$~Hz.
+ 
+Para o filtro considerado, a frequência de corte é dada pela expressão:
+	\begin{equation}
+     	f_c = \frac{1}{2\pi\sqrt{R1 \cdot R2 \cdot C1 \cdot C2}}
+     	\label{eq:fcseg}
+     \end{equation}
+
+Para haver ganho unitário na banda passante e $f_c = 500$~Hz, escolheu-se  $R_1 = R_2 = 22,5~k\Omega$, $C_1 = 20$~nF e $C_2 = 10$~nF.  
+
+
+\subsection{Simulação e teste do circuito de pré-processamento}
+\label{ssec:simula}	
+Nesta implementação, a conversão analógico-digital é realizada por uma placa de áudio (UCA 200, desenvolvida pela~\citeauthor{BEHRINGER2019}), o que permitiu a supressão o bloco \emph{etapa de condicionamento do sinal}. A Figura~\ref{fig:esqsofiltros} mostra o esquemático final do circuito de pré-processamento (entrada de sinais sendo representada pela fonte de tensão V1).
+\begin{figure}[h] 
+  \centering
+  \includegraphics[width=0.6\textwidth]{fig/esquematico_so_filtros}
+	\caption{Esquemático do circuito apenas com os filtros. Fonte:~\parencite{limajr2019}.}
+  \label{fig:esqsofiltros}
+\end{figure} 
+	
+A Figura~\ref{fig:grafsofiltros} mostra a resposta em frequência do circuito e, como esperávamos, as frequências de corte estão coerentes com o esperado: frequência de corte inferior e superior, respectivamente, iguais a $10$ e $500$~Hz.
+\begin{figure}[h] 
+  \centering
+  \includegraphics[width=0.6\textwidth]{fig/grafico_so_com_filtros}
+	\caption{Gráfico da resposta em frequência do circuito implementado. Fonte:~\parencite{limajr2019}.}
+  \label{fig:grafsofiltros}
+\end{figure} 
+	
+Com o intuito de proteção e diminuir as possíveis interferências eletromagnéticas, utilizamos caixas metálicas para a acomodação dos protótipos (Figura~\ref{fig:s0_filtros}).
+	\begin{figure} [h]
+		\centering
+		\includegraphics[width=0.6\textwidth]{fig/caixas}
+		\caption{Protótipos acomodados em caixas metálicas. Fonte:~\parencite{limajr2019}.}
+		\label{fig:s0_filtros}
+	\end{figure}
+
+Na Figura~\ref{fig:sinal_filtros}, apresentamos o setup completo do sistema de aquisição do sinal.
+
+	\begin{figure}[h]
+		\centering
+		\includegraphics[width=0.8\textwidth]{fig/sinal_filtros}
+		\caption{Setup final do sistema de aquisição de sinal. Fonte:~\parencite{limajr2019}.}
+		\label{fig:sinal_filtros}
+	\end{figure}
+
+A título de exemplo de funcionamento do sistema implementado, foi feita a aquisição de sinal mioelétrico correspondente à atividade muscular na região do flexores do antebraço direito de um indivíduo. Foram utilizados três eletrodos conectados à entrada do circuito de aquisição, onde os dois primeiros foram fixados próximos um ao outro na região dos músculos flexores do antebraço direito e o terceiro, responsável pelo nível de referência, foi fixado na região óssea próxima ao cotovelo.
+
+Os movimentos escolhidos para a aquisição do sinal foram:
+	\begin{itemize}
+		\item O abrir e fechar da mão;
+		\item O movimento de pinças entre polegar-indicador, polegar-médio, polegar-anular e polegar-mínimo
+	\end{itemize}
+onde o primeiro movimento foi realizado três vezes, com intervalo de um segundo entre cada execução e os movimentos de pinça com intervalos de um segundo entre eles.
+
+Seguem os resultados:
+	\begin{figure}[h]
+		\centering
+		\includegraphics[width=0.8\textwidth]{fig/captura_filtros}
+		\caption{Gráficos dos sinais obtidos. Fonte:~\parencite{limajr2019}.}
+		\label{fig:captura_ret}
+	\end{figure}
+	
+%\section{Conclusão}
+%\label{sec:concl}
  
 \printbibliography
 \end{document}
